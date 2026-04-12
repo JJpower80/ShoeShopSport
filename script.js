@@ -100,11 +100,182 @@ document.addEventListener('DOMContentLoaded', function() {
     const adminProductoForm = document.getElementById('adminProductoForm');
     const btnCancelarEdicion = document.getElementById('btnCancelarEdicion');
 
+    // Chatbot local
+    const chatbotToggle = document.getElementById('chatbotToggle');
+    const chatbotPanel = document.getElementById('chatbotPanel');
+    const chatbotCerrar = document.getElementById('chatbotCerrar');
+    const chatbotMensajes = document.getElementById('chatbotMensajes');
+    const chatbotForm = document.getElementById('chatbotForm');
+    const chatbotInput = document.getElementById('chatbotInput');
+    const chatbotChips = document.querySelectorAll('.chatbot-chip');
+    const CHATBOT_STORAGE_KEY = 'shoeshopsport_chat_historial';
+
+    const faqRespuestas = [
+        {
+            keys: ['envio', 'enviar', 'entrega', 'cuanto tarda', 'tarda'],
+            answer: 'Realizamos envios en 24-72 horas laborables dentro de la peninsula. Para pedidos superiores a 50EUR, el envio es gratis.'
+        },
+        {
+            keys: ['devolucion', 'devolver', 'cambio', 'reembolso'],
+            answer: 'Puedes solicitar devolucion dentro de los 14 dias naturales desde la entrega. El producto debe estar sin uso y en su caja original.'
+        },
+        {
+            keys: ['talla', 'tallas', 'numero', 'guia'],
+            answer: 'Recomendamos elegir tu talla habitual. Si dudas entre dos tallas, elige la mayor para running y la mas ajustada para uso casual.'
+        },
+        {
+            keys: ['pago', 'tarjeta', 'pasarela', 'bizum'],
+            answer: 'Aceptamos pago con tarjeta en la pasarela virtual del proyecto. Para pruebas: 4242 4242 4242 4242 aprueba y 4000 0000 0000 0002 rechaza.'
+        },
+        {
+            keys: ['pedido', 'estado', 'seguimiento'],
+            answer: 'El estado del pedido se registra al finalizar el pago. Si necesitas revisar uno, escribenos desde el formulario de contacto con tu email.'
+        },
+        {
+            keys: ['contacto', 'telefono', 'correo', 'email'],
+            answer: 'Puedes contactarnos desde la seccion Contacto o por email a info@shoeshopsport.com. Horario: L-V 9:00-20:00, Sabados 10:00-14:00.'
+        },
+        {
+            keys: ['hola', 'buenas', 'hello'],
+            answer: 'Hola, soy tu asistente virtual. Puedo ayudarte con envios, devoluciones, tallas, pagos o contacto.'
+        }
+    ];
+
+    function chatbotGuardarHistorial() {
+        if (!chatbotMensajes) return;
+        const historial = Array.from(chatbotMensajes.querySelectorAll('.chatbot-msg')).map(msg => ({
+            tipo: msg.classList.contains('user') ? 'user' : 'bot',
+            texto: msg.textContent
+        }));
+        localStorage.setItem(CHATBOT_STORAGE_KEY, JSON.stringify(historial));
+    }
+
+    function chatbotCargarHistorial() {
+        if (!chatbotMensajes) return false;
+        const raw = localStorage.getItem(CHATBOT_STORAGE_KEY);
+        if (!raw) return false;
+
+        try {
+            const historial = JSON.parse(raw);
+            if (!Array.isArray(historial) || !historial.length) return false;
+
+            historial.forEach(item => {
+                const tipo = item?.tipo === 'user' ? 'user' : 'bot';
+                const texto = String(item?.texto || '').trim();
+                if (!texto) return;
+                chatbotAnadirMensaje(texto, tipo, false);
+            });
+
+            return chatbotMensajes.children.length > 0;
+        } catch {
+            return false;
+        }
+    }
+
+    function chatbotAnadirMensaje(texto, tipo, guardar = true) {
+        if (!chatbotMensajes) return;
+        const msg = document.createElement('div');
+        msg.className = `chatbot-msg ${tipo}`;
+        msg.textContent = texto;
+        chatbotMensajes.appendChild(msg);
+        chatbotMensajes.scrollTop = chatbotMensajes.scrollHeight;
+        if (guardar) chatbotGuardarHistorial();
+    }
+
+    function chatbotResponder(preguntaOriginal) {
+        const pregunta = (preguntaOriginal || '').toLowerCase().trim();
+
+        if (!pregunta) {
+            return 'Puedes escribirme una duda concreta. Por ejemplo: envio, devolucion, tallas o pago.';
+        }
+
+        if (pregunta.includes('carrito') || pregunta.includes('total') || pregunta.includes('cuanto llevo')) {
+            const totalItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+            const totalPrecio = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+
+            if (!totalItems) {
+                return 'Tu carrito esta vacio ahora mismo. Puedes agregar productos desde la seccion Productos.';
+            }
+
+            return `Tienes ${totalItems} producto(s) en el carrito con un total de ${totalPrecio.toFixed(2)}EUR.`;
+        }
+
+        if (pregunta.includes('sesion') || pregunta.includes('mi cuenta') || pregunta.includes('usuario')) {
+            if (usuarioActual) {
+                return `Estas con sesion iniciada como ${usuarioActual.nombre}. Si quieres, puedo ayudarte a ir al carrito o a contacto.`;
+            }
+            return 'Ahora mismo no hay sesion iniciada. Puedes usar el boton "Iniciar Sesion" del menu.';
+        }
+
+        if (pregunta.includes('borrar chat') || pregunta.includes('limpiar chat') || pregunta.includes('reiniciar chat')) {
+            chatbotMensajes.innerHTML = '';
+            localStorage.removeItem(CHATBOT_STORAGE_KEY);
+            return 'Historial del chat reiniciado. Empezamos de nuevo cuando quieras.';
+        }
+
+        for (const faq of faqRespuestas) {
+            if (faq.keys.some(k => pregunta.includes(k))) {
+                return faq.answer;
+            }
+        }
+
+        if (pregunta.includes('producto') || pregunta.includes('zapatilla')) {
+            document.querySelector('#productos')?.scrollIntoView({ behavior: 'smooth' });
+            return 'Te llevo a la seccion de productos para que veas el catalogo disponible.';
+        }
+
+        if (pregunta.includes('contactar') || pregunta.includes('mensaje')) {
+            document.querySelector('#contacto')?.scrollIntoView({ behavior: 'smooth' });
+            return 'Te llevo a contacto para que puedas enviarnos tu consulta.';
+        }
+
+        return 'No tengo una respuesta exacta para eso todavia. Prueba con: envio, devolucion, tallas, pago o contacto.';
+    }
+
+    function chatbotEnviar(texto) {
+        chatbotAnadirMensaje(texto, 'user');
+        const respuesta = chatbotResponder(texto);
+        setTimeout(() => chatbotAnadirMensaje(respuesta, 'bot'), 250);
+    }
+
     // Toggle del menú hamburguesa
     menuToggle.addEventListener('click', function() {
         menuToggle.classList.toggle('active');
         navMenu.classList.toggle('active');
     });
+
+    // Chatbot eventos
+    if (chatbotToggle && chatbotPanel && chatbotCerrar && chatbotForm && chatbotInput) {
+        const tieneHistorial = chatbotCargarHistorial();
+        if (!tieneHistorial) {
+            chatbotAnadirMensaje('Hola, soy el asistente de ShoeShopSport. En que puedo ayudarte?', 'bot');
+        }
+
+        chatbotToggle.addEventListener('click', function() {
+            chatbotPanel.classList.toggle('activo');
+            if (chatbotPanel.classList.contains('activo')) {
+                chatbotInput.focus();
+            }
+        });
+
+        chatbotCerrar.addEventListener('click', function() {
+            chatbotPanel.classList.remove('activo');
+        });
+
+        chatbotForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const texto = chatbotInput.value.trim();
+            if (!texto) return;
+            chatbotEnviar(texto);
+            chatbotInput.value = '';
+        });
+
+        chatbotChips.forEach(chip => {
+            chip.addEventListener('click', function() {
+                chatbotEnviar(this.dataset.prompt || this.textContent || '');
+            });
+        });
+    }
 
     // Cerrar menú al hacer click en un enlace
     navLinks.forEach(link => {

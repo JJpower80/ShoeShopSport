@@ -554,6 +554,36 @@
         </div>
     </footer>
 
+    <!-- Chatbot FAQ local -->
+    <button class="chatbot-toggle" id="chatbotToggle" aria-label="Abrir chat de ayuda">
+        <span class="chatbot-toggle-texto">Ayuda</span>
+    </button>
+
+    <section class="chatbot-panel" id="chatbotPanel" aria-live="polite" aria-label="Chat de ayuda">
+        <header class="chatbot-header">
+            <div>
+                <h3>Asistente ShoeShopSport</h3>
+                <p>Respuestas rapidas sobre tienda y pedidos</p>
+            </div>
+            <button class="chatbot-cerrar" id="chatbotCerrar" aria-label="Cerrar chat">&times;</button>
+        </header>
+
+        <div class="chatbot-mensajes" id="chatbotMensajes"></div>
+
+        <div class="chatbot-sugerencias" id="chatbotSugerencias">
+            <button type="button" class="chatbot-chip" data-prompt="envio">Envio</button>
+            <button type="button" class="chatbot-chip" data-prompt="devolucion">Devoluciones</button>
+            <button type="button" class="chatbot-chip" data-prompt="tallas">Tallas</button>
+            <button type="button" class="chatbot-chip" data-prompt="carrito">Carrito</button>
+            <button type="button" class="chatbot-chip" data-prompt="pago">Pago</button>
+        </div>
+
+        <form class="chatbot-form" id="chatbotForm">
+            <input type="text" id="chatbotInput" placeholder="Escribe tu pregunta..." maxlength="180" autocomplete="off">
+            <button type="submit">Enviar</button>
+        </form>
+    </section>
+
     <script src="api-client.js"></script>
     <script src="script.js"></script>
 </body>
