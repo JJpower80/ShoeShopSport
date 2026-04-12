@@ -81,6 +81,14 @@ const API = {
         obtenerPorId: (id) => API.request(`pedidos.php?id=${id}`)
     },
 
+    // Pasarela de pago virtual
+    pago: {
+        procesar: (datos) => API.request('pago.php', {
+            method: 'POST',
+            body: JSON.stringify(datos)
+        })
+    },
+
     // Autenticación y Usuarios
     auth: {
         registro: (datos) => API.request('auth.php?action=registro', {

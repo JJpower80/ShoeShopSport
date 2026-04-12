@@ -396,6 +396,118 @@
         </div>
     </div>
 
+    <!-- Modal Pasarela de Pago Virtual -->
+    <div class="modal-overlay" id="modalPago">
+        <div class="modal-pago">
+            <button class="btn-cerrar-modal" id="btnCerrarPago">&times;</button>
+
+            <!-- Indicador de pasos -->
+            <div class="pago-pasos">
+                <div class="pago-paso activo" id="pasoInd1">
+                    <span class="paso-num">1</span>
+                    <span class="paso-label">Envío</span>
+                </div>
+                <div class="pago-paso-linea"></div>
+                <div class="pago-paso" id="pasoInd2">
+                    <span class="paso-num">2</span>
+                    <span class="paso-label">Pago</span>
+                </div>
+                <div class="pago-paso-linea"></div>
+                <div class="pago-paso" id="pasoInd3">
+                    <span class="paso-num">3</span>
+                    <span class="paso-label">Confirmación</span>
+                </div>
+            </div>
+
+            <!-- Paso 1: Datos de envío -->
+            <div class="pago-step" id="pagoStep1">
+                <h2>Datos de envío</h2>
+                <form id="formDatosEnvio">
+                    <div class="form-group">
+                        <label for="pagoNombre">Nombre completo *</label>
+                        <input type="text" id="pagoNombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pagoEmail">Email *</label>
+                        <input type="email" id="pagoEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pagoTelefono">Teléfono</label>
+                        <input type="tel" id="pagoTelefono">
+                    </div>
+                    <div class="form-group">
+                        <label for="pagoDireccion">Dirección de envío *</label>
+                        <textarea id="pagoDireccion" rows="2" required></textarea>
+                    </div>
+                    <!-- Resumen del pedido -->
+                    <div class="pago-resumen" id="pagoResumen"></div>
+                    <button type="submit" class="btn-primary">Continuar al pago</button>
+                </form>
+            </div>
+
+            <!-- Paso 2: Datos de tarjeta -->
+            <div class="pago-step" id="pagoStep2" style="display:none;">
+                <h2>Datos de pago</h2>
+                <div class="tarjeta-visual" id="tarjetaVisual">
+                    <div class="tarjeta-chip"></div>
+                    <div class="tarjeta-numero" id="tvNumero">•••• •••• •••• ••••</div>
+                    <div class="tarjeta-inferior">
+                        <div>
+                            <div class="tarjeta-etiqueta">Titular</div>
+                            <div class="tarjeta-titular" id="tvTitular">NOMBRE APELLIDO</div>
+                        </div>
+                        <div>
+                            <div class="tarjeta-etiqueta">Caduca</div>
+                            <div class="tarjeta-caducidad" id="tvCaducidad">MM/AA</div>
+                        </div>
+                    </div>
+                </div>
+                <form id="formTarjeta">
+                    <div class="form-group">
+                        <label for="cardNumero">Número de tarjeta *</label>
+                        <input type="text" id="cardNumero" maxlength="19" placeholder="1234 5678 9012 3456" autocomplete="off" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cardTitular">Titular de la tarjeta *</label>
+                        <input type="text" id="cardTitular" placeholder="Como aparece en la tarjeta" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="cardCaducidad">Caducidad (MM/AA) *</label>
+                            <input type="text" id="cardCaducidad" maxlength="5" placeholder="MM/AA" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cardCvv">CVV *</label>
+                            <input type="text" id="cardCvv" maxlength="4" placeholder="123" autocomplete="off" required>
+                        </div>
+                    </div>
+                    <p class="pago-test-hint">
+                        Tarjetas de prueba: <strong>4242 4242 4242 4242</strong> (aprobada) &nbsp;|&nbsp;
+                        <strong>4000 0000 0000 0002</strong> (rechazada). Usa cualquier fecha futura y CVV.
+                    </p>
+                    <div class="pago-botones">
+                        <button type="button" class="btn-secondary" id="btnVolverEnvio">← Volver</button>
+                        <button type="submit" class="btn-primary btn-pagar" id="btnPagarAhora">
+                            🔒 Pagar <span id="pagoTotalBtn"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Paso 3: Procesando -->
+            <div class="pago-step pago-procesando" id="pagoStep3" style="display:none;">
+                <div class="spinner-pago"></div>
+                <h2>Procesando pago...</h2>
+                <p>Por favor, no cierres esta ventana.</p>
+            </div>
+
+            <!-- Paso 4: Resultado -->
+            <div class="pago-step" id="pagoStep4" style="display:none;">
+                <div class="pago-resultado" id="pagoResultado"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-envio">

@@ -152,63 +152,167 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Botón de finalizar compra
+    // Botón de finalizar compra → abre la pasarela virtual
     const btnComprar = document.querySelector('.btn-comprar');
     if (btnComprar) {
-        btnComprar.addEventListener('click', async function() {
+        btnComprar.addEventListener('click', function() {
             if (carrito.length === 0) {
                 mostrarNotificacion('El carrito está vacío');
                 return;
             }
-            
-            // Si el usuario está logueado, usar sus datos
-            let datosCliente = {};
-            if (usuarioActual) {
-                datosCliente = {
-                    nombre: usuarioActual.nombre,
-                    email: usuarioActual.email,
-                    telefono: usuarioActual.telefono || '',
-                    direccion: usuarioActual.direccion || ''
-                };
-                
-                // Si falta dirección, pedirla
-                if (!datosCliente.direccion) {
-                    const direccion = prompt('Ingresa tu dirección de envío:');
-                    if (!direccion) return;
-                    datosCliente.direccion = direccion;
-                }
-            } else {
-                // Solicitar datos del cliente
-                const nombre = prompt('Ingresa tu nombre completo:');
-                if (!nombre) return;
-                
-                const email = prompt('Ingresa tu email:');
-                if (!email) return;
-                
-                const telefono = prompt('Ingresa tu teléfono (opcional):');
-                const direccion = prompt('Ingresa tu dirección de envío:');
-                if (!direccion) return;
-                
-                datosCliente = { nombre, email, telefono, direccion };
-            }
-            
-            // Crear pedido
-            const response = await API.pedidos.crear({
-                cliente: datosCliente,
-                productos: carrito
-            });
-            
-            if (response.success) {
-                mostrarNotificacion(`¡Pedido #${response.pedido_id} realizado con éxito! Total: ${response.total.toFixed(2)}€`);
-                carrito = [];
-                localStorage.removeItem('carrito');
-                actualizarCarrito();
-                carritoDropdown.classList.remove('active');
-            } else {
-                mostrarNotificacion('Error al procesar el pedido: ' + response.message);
-            }
+            abrirPasarelaPago();
         });
     }
+
+    // ── Pasarela de pago virtual ──────────────────────────────────────────
+    const modalPago     = document.getElementById('modalPago');
+    const btnCerrarPago = document.getElementById('btnCerrarPago');
+
+    function abrirPasarelaPago() {
+        // Pre-rellenar datos de envío si hay usuario logueado
+        if (usuarioActual) {
+            document.getElementById('pagoNombre').value    = usuarioActual.nombre    || '';
+            document.getElementById('pagoEmail').value     = usuarioActual.email     || '';
+            document.getElementById('pagoTelefono').value  = usuarioActual.telefono  || '';
+            document.getElementById('pagoDireccion').value = usuarioActual.direccion || '';
+        } else {
+            document.getElementById('pagoNombre').value    = '';
+            document.getElementById('pagoEmail').value     = '';
+            document.getElementById('pagoTelefono').value  = '';
+            document.getElementById('pagoDireccion').value = '';
+        }
+
+        // Mostrar resumen del carrito
+        const total = carrito.reduce((s, i) => s + i.precio * i.cantidad, 0);
+        const resumenHtml = `
+            <h4>Resumen del pedido</h4>
+            <ul class="pago-lista-productos">
+                ${carrito.map(i => `<li><span>${i.nombre} × ${i.cantidad}</span><span>${(i.precio * i.cantidad).toFixed(2)}€</span></li>`).join('')}
+            </ul>
+            <div class="pago-total-resumen"><strong>Total:</strong> <strong>${total.toFixed(2)}€</strong></div>
+        `;
+        document.getElementById('pagoResumen').innerHTML = resumenHtml;
+        document.getElementById('pagoTotalBtn').textContent = total.toFixed(2) + '€';
+
+        irAPasoUI(1);
+        modalPago.classList.add('active');
+        carritoDropdown.classList.remove('active');
+    }
+
+    function irAPasoUI(paso) {
+        [1, 2, 3, 4].forEach(n => {
+            const el = document.getElementById('pagoStep' + n);
+            if (el) el.style.display = (n === paso) ? 'block' : 'none';
+        });
+        [1, 2, 3].forEach(n => {
+            const ind = document.getElementById('pasoInd' + n);
+            if (ind) ind.classList.toggle('activo', n <= paso && paso < 3);
+            if (ind) ind.classList.toggle('completado', n < paso);
+        });
+    }
+
+    btnCerrarPago.addEventListener('click', () => modalPago.classList.remove('active'));
+    modalPago.addEventListener('click', e => { if (e.target === modalPago) modalPago.classList.remove('active'); });
+
+    // Paso 1 → Paso 2
+    document.getElementById('formDatosEnvio').addEventListener('submit', function(e) {
+        e.preventDefault();
+        irAPasoUI(2);
+    });
+
+    document.getElementById('btnVolverEnvio').addEventListener('click', () => irAPasoUI(1));
+
+    // Formatear número de tarjeta en tiempo real
+    document.getElementById('cardNumero').addEventListener('input', function() {
+        let v = this.value.replace(/\D/g, '').substring(0, 16);
+        this.value = v.replace(/(.{4})/g, '$1 ').trim();
+        document.getElementById('tvNumero').textContent =
+            (v + '················').substring(0, 16).replace(/(.{4})/g, '$1 ').trim()
+            .replace(/[^• ]/g, d => d === '·' ? '•' : d);
+        // Mostrar dígitos reales en la tarjeta visual
+        const display = v.padEnd(16, '•').replace(/(.{4})/g, '$1 ').trim();
+        document.getElementById('tvNumero').textContent = display;
+    });
+
+    document.getElementById('cardTitular').addEventListener('input', function() {
+        document.getElementById('tvTitular').textContent = this.value.toUpperCase() || 'NOMBRE APELLIDO';
+    });
+
+    document.getElementById('cardCaducidad').addEventListener('input', function() {
+        let v = this.value.replace(/\D/g, '').substring(0, 4);
+        if (v.length >= 3) v = v.substring(0, 2) + '/' + v.substring(2);
+        this.value = v;
+        document.getElementById('tvCaducidad').textContent = v || 'MM/AA';
+    });
+
+    // Paso 2 → Procesar pago
+    document.getElementById('formTarjeta').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const datosCliente = {
+            nombre:    document.getElementById('pagoNombre').value,
+            email:     document.getElementById('pagoEmail').value,
+            telefono:  document.getElementById('pagoTelefono').value,
+            direccion: document.getElementById('pagoDireccion').value
+        };
+
+        const datosTarjeta = {
+            numero_tarjeta: document.getElementById('cardNumero').value,
+            titular:        document.getElementById('cardTitular').value,
+            caducidad:      document.getElementById('cardCaducidad').value,
+            cvv:            document.getElementById('cardCvv').value
+        };
+
+        // Mostrar pantalla de procesando
+        irAPasoUI(3);
+
+        // Simular un pequeño delay para que parezca real
+        await new Promise(r => setTimeout(r, 2000));
+
+        const response = await API.pago.procesar({
+            ...datosTarjeta,
+            cliente:   datosCliente,
+            productos: carrito
+        });
+
+        // Mostrar resultado
+        irAPasoUI(4);
+        const resultadoEl = document.getElementById('pagoResultado');
+
+        if (response.success) {
+            resultadoEl.innerHTML = `
+                <div class="resultado-exito">
+                    <div class="resultado-icono">✓</div>
+                    <h2>¡Pago realizado con éxito!</h2>
+                    <p>Pedido <strong>#${response.pedido_id}</strong> confirmado.</p>
+                    <p>Total cobrado: <strong>${response.total.toFixed(2)}€</strong></p>
+                    <p class="codigo-auth">Código de autorización: <strong>${response.codigo_autorizacion}</strong></p>
+                    <button class="btn-primary" id="btnCerrarExito">Cerrar</button>
+                </div>
+            `;
+            carrito = [];
+            localStorage.removeItem('carrito');
+            actualizarCarrito();
+            document.getElementById('btnCerrarExito').addEventListener('click', () => {
+                modalPago.classList.remove('active');
+                document.getElementById('formTarjeta').reset();
+                document.getElementById('tvNumero').textContent = '•••• •••• •••• ••••';
+                document.getElementById('tvTitular').textContent = 'NOMBRE APELLIDO';
+                document.getElementById('tvCaducidad').textContent = 'MM/AA';
+            });
+        } else {
+            resultadoEl.innerHTML = `
+                <div class="resultado-error">
+                    <div class="resultado-icono">✗</div>
+                    <h2>Pago rechazado</h2>
+                    <p>${response.message || 'No se pudo procesar el pago.'}</p>
+                    <button class="btn-primary" id="btnReintentar">Intentar de nuevo</button>
+                </div>
+            `;
+            document.getElementById('btnReintentar').addEventListener('click', () => irAPasoUI(2));
+        }
+    });
+    // ─────────────────────────────────────────────────────────────────────
 
     // Modal de Auth
     btnLoginNav.addEventListener('click', function(e) {
@@ -431,21 +535,35 @@ async function eliminarProducto(id) {
 
 // Función para agregar productos al carrito
 async function agregarAlCarrito(nombre, precio) {
-    // Enviar a la API PHP
+    // Intentar primero en backend PHP
     const response = await API.carrito.agregar({
         nombre: nombre,
         precio: precio,
         cantidad: 1
     });
-    
-    if (response.success) {
-        // Actualizar carrito local
+
+    if (response.success && Array.isArray(response.carrito)) {
         carrito = response.carrito;
         actualizarCarrito();
         mostrarNotificacion(`${nombre} añadido al carrito`);
-    } else {
-        mostrarNotificacion('Error al agregar al carrito');
+        return;
     }
+
+    // Fallback local para evitar bloquear la compra si el backend no responde
+    const existente = carrito.find(item => item.nombre === nombre);
+    if (existente) {
+        existente.cantidad += 1;
+    } else {
+        carrito.push({
+            id: `local_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+            nombre,
+            precio: parseFloat(precio),
+            cantidad: 1
+        });
+    }
+
+    actualizarCarrito();
+    mostrarNotificacion(`${nombre} añadido al carrito (modo local)`);
 }
 
 // Función para mostrar notificación

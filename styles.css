@@ -1425,3 +1425,255 @@ section p {
         font-size: 0.8rem;
     }
 }
+
+/* ═══════════════════════════════════════════════
+   PASARELA DE PAGO VIRTUAL
+═══════════════════════════════════════════════ */
+
+.modal-pago {
+    background: #fff;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 520px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: fadeInUp 0.3s ease;
+}
+
+/* Indicador de pasos */
+.pago-pasos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.8rem;
+    gap: 0;
+}
+
+.pago-paso {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    opacity: 0.4;
+    transition: opacity 0.3s;
+}
+
+.pago-paso.activo,
+.pago-paso.completado { opacity: 1; }
+
+.paso-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #ccc;
+    color: #fff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: background 0.3s;
+}
+
+.pago-paso.activo .paso-num   { background: #e44d26; }
+.pago-paso.completado .paso-num { background: #4caf50; }
+
+.paso-label {
+    font-size: 0.7rem;
+    color: #555;
+    white-space: nowrap;
+}
+
+.pago-paso-linea {
+    flex: 1;
+    height: 2px;
+    background: #ddd;
+    margin: 0 6px;
+    margin-bottom: 16px;
+    min-width: 30px;
+}
+
+/* Resumen del pedido (paso 1) */
+.pago-resumen {
+    background: #f8f8f8;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.pago-lista-productos {
+    list-style: none;
+    font-size: 0.9rem;
+    margin: 0.5rem 0;
+}
+
+.pago-lista-productos li {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.pago-total-resumen {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    font-size: 1rem;
+}
+
+/* ── Tarjeta visual ── */
+.tarjeta-visual {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: #fff;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.tarjeta-visual::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+}
+
+.tarjeta-chip {
+    width: 36px;
+    height: 28px;
+    background: linear-gradient(135deg, #d4a843, #f0c040);
+    border-radius: 5px;
+    margin-bottom: 0.5rem;
+}
+
+.tarjeta-numero {
+    font-size: 1.2rem;
+    letter-spacing: 3px;
+    font-family: 'Courier New', monospace;
+    margin: 0.5rem 0;
+}
+
+.tarjeta-inferior {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.tarjeta-etiqueta {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    opacity: 0.7;
+    letter-spacing: 1px;
+}
+
+.tarjeta-titular,
+.tarjeta-caducidad {
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
+
+/* Fila de dos columnas */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* Hint de tarjetas de prueba */
+.pago-test-hint {
+    font-size: 0.75rem;
+    color: #666;
+    background: #fff8e1;
+    border-left: 3px solid #ffc107;
+    padding: 0.5rem 0.7rem;
+    border-radius: 4px;
+    margin: 0.8rem 0;
+    line-height: 1.5;
+}
+
+/* Botones del paso 2 */
+.pago-botones {
+    display: flex;
+    gap: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+.btn-pagar {
+    flex: 1;
+    font-size: 1rem;
+    padding: 0.8rem;
+}
+
+/* ── Pantalla de procesando ── */
+.pago-procesando {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.pago-procesando h2 { margin: 1rem 0 0.5rem; }
+
+.spinner-pago {
+    width: 56px;
+    height: 56px;
+    border: 5px solid #eee;
+    border-top-color: #e44d26;
+    border-radius: 50%;
+    animation: girar 0.8s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes girar {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Resultado ── */
+.resultado-exito,
+.resultado-error {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.resultado-icono {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin: 0 auto 1rem;
+    color: #fff;
+}
+
+.resultado-exito .resultado-icono { background: #4caf50; }
+.resultado-error  .resultado-icono { background: #e44d26; }
+
+.resultado-exito h2 { color: #2e7d32; }
+.resultado-error  h2 { color: #c62828; }
+
+.resultado-exito p,
+.resultado-error  p { margin: 0.4rem 0; }
+
+.codigo-auth {
+    font-size: 0.85rem;
+    color: #777;
+    margin-top: 0.8rem !important;
+}
+
+.resultado-exito .btn-primary,
+.resultado-error  .btn-primary {
+    margin-top: 1.2rem;
+}
+
